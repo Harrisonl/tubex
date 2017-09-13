@@ -1,15 +1,14 @@
 defmodule Tubex.Video do
 
-  defstruct title: nil, etag: nil, video_id: nil, channel_id: nil, channel_title: nil, description: nil, published_at: nil, thumbnails: []
+  defstruct title: nil, etag: nil, video_id: nil, channel_id: nil, channel_title: nil, description: nil, published_at: nil, thumbnails: [], duration: nil
 
   @doc """
   fetch contents details
   """
   def detail(video_id) do
-    opts = [key: Tubex.api_key, id: video_id, part: "contentDetails"]
+    opts = [key: Tubex.api_key, id: video_id, part: "snippet,contentDetails"]
     case Tubex.API.get(Tubex.endpoint <> "/videos", opts) do
-      {:ok, response} ->
-        response
+      {:ok, response} -> Enum.map(response["items"], &parse/1)
       err -> err
     end
   end
@@ -47,7 +46,7 @@ defmodule Tubex.Video do
     end
   end
 
-  defp parse(%{"snippet" => snippet, "id" => %{"videoId" => video_id}}) do
+  defp parse(%{"contentDetails" => cd, "snippet" => snippet, "id" => id}) do
     {:ok,
       %Tubex.Video{
         etag: snippet["etag"],
@@ -57,7 +56,8 @@ defmodule Tubex.Video do
         channel_title: snippet["channelTitle"],
         channel_id: snippet["channelId"],
         description: snippet["description"],
-        video_id: video_id
+        video_id: id,
+        duration: cd["duration"]
       }
     }
   end
